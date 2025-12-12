@@ -552,7 +552,7 @@ class UnifiedUploader:
                 'Destination': destino_temporal,
                 'Content-Length': str(tamaño_archivo),
                 'OC-Total-Length': 'A',  # Bypass de cuota
-                'X-Expected-Entity-Length': str(tamaÃ±o_archivo)
+                'X-Expected-Entity-Length': str(tamaño_archivo)
             }
             with open(self.file_path, 'rb') as archivo:
                 response = self.session.put(chunk_url, headers=headers, data=archivo)
