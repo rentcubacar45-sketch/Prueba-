@@ -546,7 +546,7 @@ class UnifiedUploader:
                 err_msg = f"Error al crear carpeta: {response.status_code} - {response.text}"
                 raise Exception(err_msg)
 
-            tamaÃ±o_archivo = os.path.getsize(self.file_path)
+            tamaño_archivo = os.path.getsize(self.file_path)
             chunk_url = f"{base_uploads}/{temp_folder}/{nombre_final}"
             headers = {
                 'Destination': destino_temporal,
