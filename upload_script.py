@@ -550,7 +550,7 @@ class UnifiedUploader:
             chunk_url = f"{base_uploads}/{temp_folder}/{nombre_final}"
             headers = {
                 'Destination': destino_temporal,
-                'Content-Length': str(tamaÃ±o_archivo),
+                'Content-Length': str(tamaño_archivo),
                 'OC-Total-Length': 'A',  # Bypass de cuota
                 'X-Expected-Entity-Length': str(tamaÃ±o_archivo)
             }
