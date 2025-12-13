@@ -25,8 +25,8 @@ requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 # Define the SOCKS5 proxy
 PROXY = {
-    'http': 'socks5h://carlos:659874@152.206.139.83:6046',
-    'https': 'socks5h://carlos:659874@152.206.139.83:6046'
+    'http': 'socks5h://Meka01:3264@152.206.119.70:9091',
+    'https': 'socks5h://Meka01:3264@152.206.119.70:9091'
 }
 
 class UnifiedUploader:
