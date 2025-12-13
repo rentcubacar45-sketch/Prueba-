@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 Bot de Telegram para subir archivos a Moodle, OJS y Next
-Archivo principal - Versión HTML Parse Mode
+Archivo principal - Versión Render-ready
 """
 
 import logging
@@ -11,7 +11,7 @@ import sys
 import traceback
 import time
 from typing import Dict, Optional, Tuple
-from telegram import Update
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
     ApplicationBuilder,
     CommandHandler,
@@ -26,8 +26,8 @@ from telegram.ext import (
 from uploader import UnifiedUploader
 
 # ========= CONFIGURACIÓN =========
-# Token del bot de Telegram (REEMPLAZA CON TU TOKEN)
-TELEGRAM_BOT_TOKEN = "8189412029:AAH2YH0WRe16oMYOoxISHlnxWK4zNEvOfio"
+# TOKEN DEL BOT - ¡REEMPLAZA ESTO CON TU TOKEN REAL!
+TELEGRAM_BOT_TOKEN = "8189412029:AAH2YH0WRe16oMYOoxISHlnxWK4zNEvOfio"  # Cambia esto por tu token real
 
 # Alias del administrador (sin @)
 ADMIN_ALIAS = "Eliel_21"
@@ -57,37 +57,31 @@ def is_admin(update: Update) -> bool:
     username = update.effective_user.username
     return username and username.lower() == ADMIN_ALIAS.lower()
 
-def format_html(text: str) -> str:
-    """Convierte texto a formato HTML seguro."""
-    # Escapar caracteres HTML
-    text = text.replace('&', '&amp;')
-    text = text.replace('<', '&lt;')
-    text = text.replace('>', '&gt;')
-    text = text.replace('"', '&quot;')
-    text = text.replace("'", '&#39;')
-    
-    # Convertir saltos de línea
-    text = text.replace('\n', '<br>')
-    
-    return text
+def escape_html(text: str) -> str:
+    """Escapa caracteres especiales para HTML."""
+    return (text.replace('&', '&amp;')
+                .replace('<', '&lt;')
+                .replace('>', '&gt;')
+                .replace('"', '&quot;'))
 
 # ========= COMANDOS =========
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Inicia la conversación."""
     user_id, username = get_user_info(update)
+    username_escaped = escape_html(username)
     
     welcome_text = (
-        f"👋 ¡Hola {username}!<br><br>"
-        "<b>🤖 Bot de Subida de Archivos</b><br><br>"
-        "📤 <b>Puedo subir archivos a:</b><br>"
-        "• 📚 Moodle<br>"
-        "• 📄 OJS (Open Journal Systems)<br>"
-        "• ☁️ Nextcloud<br><br>"
-        "⚠️ <b>IMPORTANTE:</b><br>"
-        "• Este bot funciona mediante proxy<br>"
-        "• Los archivos se suben temporalmente<br>"
-        "• No se almacenan credenciales<br><br>"
-        "📝 Usa /help para ver comandos disponibles<br>"
+        f"👋 ¡Hola {username_escaped}!\n\n"
+        "<b>🤖 Bot de Subida de Archivos</b>\n\n"
+        "📤 <b>Puedo subir archivos a:</b>\n"
+        "• 📚 Moodle\n"
+        "• 📄 OJS (Open Journal Systems)\n"
+        "• ☁️ Nextcloud\n\n"
+        "⚠️ <b>IMPORTANTE:</b>\n"
+        "• Este bot funciona mediante proxy\n"
+        "• Los archivos se suben temporalmente\n"
+        "• No se almacenan credenciales\n\n"
+        "📝 Usa /help para ver comandos disponibles\n"
         "🚀 Usa /upload para comenzar"
     )
     
@@ -97,22 +91,22 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Muestra la ayuda."""
     help_text = (
-        "<b>📚 COMANDOS DISPONIBLES:</b><br><br>"
-        "📝 /start - Inicia el bot<br>"
-        "📤 /upload - Subir un archivo<br>"
-        "❓ /help - Muestra esta ayuda<br>"
-        "ℹ️ /status - Estado del bot<br>"
-        "📊 /stats - Estadísticas (admin)<br>"
-        "🔄 /reset - Reinicia tu sesión<br><br>"
-        "<b>📋 PROCESO DE SUBIDA:</b><br>"
-        "1. Selecciona plataforma<br>"
-        "2. Ingresa credenciales<br>"
-        "3. Envía el archivo<br>"
-        "4. ¡Listo! Obtén el enlace<br><br>"
-        "<b>📎 ARCHIVOS SOPORTADOS:</b><br>"
-        "• PDF (.pdf)<br>"
-        "• Word (.doc, .docx)<br>"
-        "• Texto (.txt)<br><br>"
+        "<b>📚 COMANDOS DISPONIBLES:</b>\n\n"
+        "📝 /start - Inicia el bot\n"
+        "📤 /upload - Subir un archivo\n"
+        "❓ /help - Muestra esta ayuda\n"
+        "ℹ️ /status - Estado del bot\n"
+        "📊 /stats - Estadísticas (admin)\n"
+        "🔄 /reset - Reinicia tu sesión\n\n"
+        "<b>📋 PROCESO DE SUBIDA:</b>\n"
+        "1. Selecciona plataforma\n"
+        "2. Ingresa credenciales\n"
+        "3. Envía el archivo\n"
+        "4. ¡Listo! Obtén el enlace\n\n"
+        "<b>📎 ARCHIVOS SOPORTADOS:</b>\n"
+        "• PDF (.pdf)\n"
+        "• Word (.doc, .docx)\n"
+        "• Texto (.txt)\n\n"
         f"<b>⚡ ADMIN:</b> @{ADMIN_ALIAS}"
     )
     
@@ -121,16 +115,16 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 async def status(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Muestra el estado del bot."""
     status_text = (
-        "<b>✅ BOT ACTIVO</b><br><br>"
-        "<b>🔧 Funcionalidades:</b><br>"
-        "• Subida a Moodle ✓<br>"
-        "• Subida a OJS ✓<br>"
-        "• Subida a Nextcloud ✓<br>"
-        "• Proxy SOCKS5 ✓<br>"
-        "• Progreso de subida ✓<br><br>"
-        f"<b>📊 Estadísticas:</b><br>"
-        f"• Usuarios activos: {len(user_data)}<br>"
-        "• Última actualización: Funcionando<br><br>"
+        "<b>✅ BOT ACTIVO</b>\n\n"
+        "<b>🔧 Funcionalidades:</b>\n"
+        "• Subida a Moodle ✓\n"
+        "• Subida a OJS ✓\n"
+        "• Subida a Nextcloud ✓\n"
+        "• Proxy SOCKS5 ✓\n"
+        "• Progreso de subida ✓\n\n"
+        f"<b>📊 Estadísticas:</b>\n"
+        f"• Usuarios activos: {len(user_data)}\n"
+        "• Última actualización: Funcionando\n\n"
         f"<b>🛠️ Soporte:</b> Contacta a @{ADMIN_ALIAS}"
     )
     
@@ -146,11 +140,11 @@ async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         return
     
     stats_text = (
-        "<b>📊 ESTADÍSTICAS DEL BOT</b><br><br>"
-        f"👥 Usuarios en sesión: {len(user_data)}<br>"
-        f"🆔 Tu ID: {update.effective_user.id}<br>"
-        f"👤 Tu alias: @{update.effective_user.username or 'No disponible'}<br><br>"
-        "<b>💾 Almacenamiento temporal:</b><br>"
+        "<b>📊 ESTADÍSTICAS DEL BOT</b>\n\n"
+        f"👥 Usuarios en sesión: {len(user_data)}\n"
+        f"🆔 Tu ID: {update.effective_user.id}\n"
+        f"👤 Tu alias: @{escape_html(update.effective_user.username or 'No disponible')}\n\n"
+        "<b>💾 Almacenamiento temporal:</b>\n"
     )
     
     # Contar usuarios por plataforma
@@ -159,9 +153,9 @@ async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         if 'platform' in data:
             platforms[data['platform']] += 1
     
-    stats_text += f"• Moodle: {platforms['Moodle']}<br>"
-    stats_text += f"• OJS: {platforms['OJS']}<br>"
-    stats_text += f"• Nextcloud: {platforms['Next']}<br>"
+    stats_text += f"• Moodle: {platforms['Moodle']}\n"
+    stats_text += f"• OJS: {platforms['OJS']}\n"
+    stats_text += f"• Nextcloud: {platforms['Next']}\n"
     
     await update.message.reply_text(stats_text, parse_mode='HTML')
 
@@ -179,8 +173,8 @@ async def reset(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         del user_data[user_id]
     
     await update.message.reply_text(
-        "<b>✅ Sesión reiniciada</b><br><br>"
-        "Todos tus datos temporales han sido eliminados.<br>"
+        "<b>✅ Sesión reiniciada</b>\n\n"
+        "Todos tus datos temporales han sido eliminados.\n"
         "Puedes comenzar de nuevo con /upload",
         parse_mode='HTML'
     )
@@ -196,8 +190,6 @@ async def upload_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
         'step': 'platform'
     }
     
-    from telegram import InlineKeyboardButton, InlineKeyboardMarkup
-    
     keyboard = [
         [
             InlineKeyboardButton("📚 Moodle", callback_data="Moodle"),
@@ -212,11 +204,11 @@ async def upload_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
     reply_markup = InlineKeyboardMarkup(keyboard)
     
     await update.message.reply_text(
-        "<b>📤 SUBIR ARCHIVO</b><br><br>"
-        "<b>1️⃣ Selecciona la plataforma:</b><br><br>"
-        "• <b>📚 Moodle:</b> Para cursos y materiales<br>"
-        "• <b>📄 OJS:</b> Para revistas académicas<br>"
-        "• <b>☁️ Nextcloud:</b> Almacenamiento en la nube<br><br>"
+        "<b>📤 SUBIR ARCHIVO</b>\n\n"
+        "<b>1️⃣ Selecciona la plataforma:</b>\n\n"
+        "• <b>📚 Moodle:</b> Para cursos y materiales\n"
+        "• <b>📄 OJS:</b> Para revistas académicas\n"
+        "• <b>☁️ Nextcloud:</b> Almacenamiento en la nube\n\n"
         "⚠️ <b>Nota:</b> Necesitarás credenciales de acceso",
         reply_markup=reply_markup,
         parse_mode='HTML'
@@ -240,15 +232,15 @@ async def platform_selection(update: Update, context: ContextTypes.DEFAULT_TYPE)
     user_data[user_id]['platform'] = query.data
     
     platform_info = {
-        "Moodle": "📚 <b>PLATAFORMA: MOODLE</b><br><br>🔗 Ejemplo de URL: https://moodle.uclv.edu.cu/",
-        "OJS": "📄 <b>PLATAFORMA: OJS</b><br><br>🔗 Ejemplo de URL: https://evea.uh.cu/",
-        "Next": "☁️ <b>PLATAFORMA: NEXTCLOUD</b><br><br>🔗 Ejemplo de URL: https://minube.uh.cu/"
+        "Moodle": "📚 <b>PLATAFORMA: MOODLE</b>\n\n🔗 Ejemplo de URL: https://moodle.uclv.edu.cu/",
+        "OJS": "📄 <b>PLATAFORMA: OJS</b>\n\n🔗 Ejemplo de URL: https://evea.uh.cu/",
+        "Next": "☁️ <b>PLATAFORMA: NEXTCLOUD</b>\n\n🔗 Ejemplo de URL: https://minube.uh.cu/"
     }
     
     await query.edit_message_text(
-        f"{platform_info[query.data]}<br><br>"
-        "<b>2️⃣ Ingresa la URL de la plataforma:</b><br><br>"
-        "📝 Envíame la URL completa incluyendo https://<br>"
+        f"{platform_info[query.data]}\n\n"
+        "<b>2️⃣ Ingresa la URL de la plataforma:</b>\n\n"
+        "📝 Envíame la URL completa incluyendo https://\n"
         "Ejemplo: https://moodle.uclv.edu.cu/",
         parse_mode='HTML'
     )
@@ -264,8 +256,8 @@ async def get_host(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     # Validar URL básica
     if not host.startswith(('http://', 'https://')):
         await update.message.reply_text(
-            "❌ <b>URL inválida</b><br><br>"
-            "Debe comenzar con http:// o https://<br>"
+            "❌ <b>URL inválida</b>\n\n"
+            "Debe comenzar con http:// o https://\n"
             "Por favor, envíala de nuevo:",
             parse_mode='HTML'
         )
@@ -278,20 +270,20 @@ async def get_host(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     
     if platform == "Next":
         cred_text = (
-            "<b>3️⃣ CREDENCIALES NEXTCLOUD</b><br><br>"
-            "🔑 <b>Usuario:</b> Tu nombre de usuario de Nextcloud<br>"
-            "🔐 <b>Contraseña:</b> Tu contraseña de Nextcloud<br><br>"
-            "📝 <b>Envía las credenciales en este formato:</b><br>"
-            "usuario:contraseña<br><br>"
+            "<b>3️⃣ CREDENCIALES NEXTCLOUD</b>\n\n"
+            "🔑 <b>Usuario:</b> Tu nombre de usuario de Nextcloud\n"
+            "🔐 <b>Contraseña:</b> Tu contraseña de Nextcloud\n\n"
+            "📝 <b>Envía las credenciales en este formato:</b>\n"
+            "usuario:contraseña\n\n"
             "Ejemplo: estudiante:miContraseña123"
         )
     else:
         cred_text = (
-            f"<b>3️⃣ CREDENCIALES {platform}</b><br><br>"
-            "🔑 <b>Usuario:</b> Tu nombre de usuario<br>"
-            "🔐 <b>Contraseña:</b> Tu contraseña<br><br>"
-            "📝 <b>Envía las credenciales en este formato:</b><br>"
-            "usuario:contraseña<br><br>"
+            f"<b>3️⃣ CREDENCIALES {platform}</b>\n\n"
+            "🔑 <b>Usuario:</b> Tu nombre de usuario\n"
+            "🔐 <b>Contraseña:</b> Tu contraseña\n\n"
+            "📝 <b>Envía las credenciales en este formato:</b>\n"
+            "usuario:contraseña\n\n"
             "Ejemplo: estudiante:miContraseña123"
         )
     
@@ -308,8 +300,8 @@ async def get_credentials(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     # Validar formato
     if ':' not in credentials:
         await update.message.reply_text(
-            "❌ <b>Formato incorrecto</b><br><br>"
-            "Debe ser: usuario:contraseña<br><br>"
+            "❌ <b>Formato incorrecto</b>\n\n"
+            "Debe ser: usuario:contraseña\n\n"
             "Por favor, envíalo de nuevo:",
             parse_mode='HTML'
         )
@@ -324,22 +316,22 @@ async def get_credentials(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     
     if platform == "Moodle":
         repo_text = (
-            "<b>4️⃣ ID DEL REPOSITORIO MOODLE</b><br><br>"
-            "🔢 <b>Repository ID:</b> Número del repositorio (generalmente 4)<br><br>"
-            "📝 <b>Envía solo el número:</b><br>"
+            "<b>4️⃣ ID DEL REPOSITORIO MOODLE</b>\n\n"
+            "🔢 <b>Repository ID:</b> Número del repositorio (generalmente 4)\n\n"
+            "📝 <b>Envía solo el número:</b>\n"
             "Ejemplo: 4"
         )
     elif platform == "OJS":
         repo_text = (
-            "<b>4️⃣ ID DE ENVÍO OJS</b><br><br>"
-            "🔢 <b>Submission ID:</b> Número del envío<br><br>"
-            "📝 <b>Envía solo el número:</b><br>"
+            "<b>4️⃣ ID DE ENVÍO OJS</b>\n\n"
+            "🔢 <b>Submission ID:</b> Número del envío\n\n"
+            "📝 <b>Envía solo el número:</b>\n"
             "Ejemplo: 123"
         )
     else:  # Next
         repo_text = (
-            "<b>4️⃣ CONFIRMACIÓN NEXTCLOUD</b><br><br>"
-            "Para Nextcloud no se necesita ID.<br>"
+            "<b>4️⃣ CONFIRMACIÓN NEXTCLOUD</b>\n\n"
+            "Para Nextcloud no se necesita ID.\n"
             "Envía cualquier texto para continuar:"
         )
     
@@ -362,7 +354,7 @@ async def get_repo_id(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
             user_data[user_id]['repo_id'] = repo_id
         except ValueError:
             await update.message.reply_text(
-                "❌ <b>Debe ser un número</b><br><br>"
+                "❌ <b>Debe ser un número</b>\n\n"
                 "Por favor, envía solo el número:",
                 parse_mode='HTML'
             )
@@ -370,13 +362,13 @@ async def get_repo_id(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
     
     # Pedir archivo
     await update.message.reply_text(
-        "<b>📎 ENVÍA EL ARCHIVO</b><br><br>"
-        "⬆️ <b>Sube el archivo que deseas enviar:</b><br><br>"
-        "📋 <b>Formatos soportados:</b><br>"
-        "• PDF (.pdf)<br>"
-        "• Word (.doc, .docx)<br>"
-        "• Texto (.txt)<br><br>"
-        "⚠️ <b>Tamaño máximo:</b> 100MB<br>"
+        "<b>📎 ENVÍA EL ARCHIVO</b>\n\n"
+        "⬆️ <b>Sube el archivo que deseas enviar:</b>\n\n"
+        "📋 <b>Formatos soportados:</b>\n"
+        "• PDF (.pdf)\n"
+        "• Word (.doc, .docx)\n"
+        "• Texto (.txt)\n\n"
+        "⚠️ <b>Tamaño máximo:</b> 100MB\n"
         "⏱️ <b>Procesando:</b> ~1-2 minutos",
         parse_mode='HTML'
     )
@@ -390,7 +382,7 @@ async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
     # Verificar si es documento
     if not update.message.document:
         await update.message.reply_text(
-            "❌ <b>Por favor, envía un archivo</b><br><br>"
+            "❌ <b>Por favor, envía un archivo</b>\n\n"
             "Usa el clip 📎 para adjuntar un documento.",
             parse_mode='HTML'
         )
@@ -405,10 +397,10 @@ async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
     
     if document.mime_type not in allowed_types:
         await update.message.reply_text(
-            "❌ <b>Tipo de archivo no soportado</b><br><br>"
-            "Solo se aceptan:<br>"
-            "• PDF (.pdf)<br>"
-            "• Word (.doc, .docx)<br>"
+            "❌ <b>Tipo de archivo no soportado</b>\n\n"
+            "Solo se aceptan:\n"
+            "• PDF (.pdf)\n"
+            "• Word (.doc, .docx)\n"
             "• Texto (.txt)",
             parse_mode='HTML'
         )
@@ -417,7 +409,7 @@ async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
     # Verificar tamaño (100MB)
     if document.file_size > 100 * 1024 * 1024:
         await update.message.reply_text(
-            "❌ <b>Archivo muy grande</b><br><br>"
+            "❌ <b>Archivo muy grande</b>\n\n"
             "El tamaño máximo es 100MB.",
             parse_mode='HTML'
         )
@@ -425,7 +417,7 @@ async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
     
     # Descargar archivo
     processing_msg = await update.message.reply_text(
-        "⏬ <b>Descargando archivo...</b><br>"
+        "⏬ <b>Descargando archivo...</b>\n"
         "Por favor espera...",
         parse_mode='HTML'
     )
@@ -443,37 +435,36 @@ async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
         user_data[user_id]['file_name'] = document.file_name
         
         await processing_msg.edit_text(
-            "✅ <b>Archivo descargado</b><br><br>"
-            "<b>📊 Información:</b><br>"
-            f"• Nombre: {document.file_name}<br>"
-            f"• Tamaño: {document.file_size / 1024 / 1024:.2f} MB<br><br>"
+            "✅ <b>Archivo descargado</b>\n\n"
+            "<b>📊 Información:</b>\n"
+            f"• Nombre: {escape_html(document.file_name)}\n"
+            f"• Tamaño: {document.file_size / 1024 / 1024:.2f} MB\n\n"
             "🚀 <b>Iniciando subida...</b>",
             parse_mode='HTML'
         )
         
         # Realizar la subida
-        return await perform_upload(update, context, user_id)
+        return await perform_upload(update, context, user_id, processing_msg)
         
     except Exception as e:
         logger.error(f"Error descargando archivo: {e}")
         await processing_msg.edit_text(
-            "❌ <b>Error al descargar el archivo</b><br><br>"
+            "❌ <b>Error al descargar el archivo</b>\n\n"
             "Por favor, intenta de nuevo.",
             parse_mode='HTML'
         )
         return UPLOAD
 
-async def perform_upload(update: Update, context: ContextTypes.DEFAULT_TYPE, user_id: int) -> int:
+async def perform_upload(update: Update, context: ContextTypes.DEFAULT_TYPE, 
+                        user_id: int, processing_msg) -> int:
     """Realiza la subida del archivo."""
-    upload_msg = None
-    
     try:
         user_info = user_data[user_id]
         
-        # Actualizar mensaje
-        upload_msg = await update.message.reply_text(
-            "🔑 <b>Iniciando sesión...</b><br>"
-            "Conectando con la plataforma...",
+        await processing_msg.edit_text(
+            "🔑 <b>Iniciando sesión...</b>\n"
+            f"Usuario: {escape_html(user_info['login_user'])}\n"
+            f"Plataforma: {user_info['platform']}",
             parse_mode='HTML'
         )
         
@@ -489,17 +480,10 @@ async def perform_upload(update: Update, context: ContextTypes.DEFAULT_TYPE, use
         )
         
         # Iniciar sesión
-        await upload_msg.edit_text(
-            "🔑 <b>Iniciando sesión...</b><br>"
-            f"Usuario: {user_info['login_user']}<br>"
-            f"Plataforma: {user_info['platform']}",
-            parse_mode='HTML'
-        )
-        
         if not uploader.login():
-            await upload_msg.edit_text(
-                "❌ <b>Error de autenticación</b><br><br>"
-                "Credenciales incorrectas o problema de conexión.<br>"
+            await processing_msg.edit_text(
+                "❌ <b>Error de autenticación</b>\n\n"
+                "Credenciales incorrectas o problema de conexión.\n"
                 "Verifica usuario/contraseña e intenta de nuevo.",
                 parse_mode='HTML'
             )
@@ -514,32 +498,27 @@ async def perform_upload(update: Update, context: ContextTypes.DEFAULT_TYPE, use
             del user_data[user_id]
             return ConversationHandler.END
         
-        # Función de progreso
-        last_update = time.time()
-        
-        def progress_callback(filename, bytes_read, total_bytes, speed, estimated_time, args):
-            nonlocal last_update
-            current_time = time.time()
-            
-            # Solo actualizar cada 3 segundos para no spammear
-            if current_time - last_update < 3 and bytes_read < total_bytes:
-                return
-            
-            last_update = current_time
-            percent = (bytes_read / total_bytes) * 100
-            speed_mb = speed / 1024 / 1024 if speed > 0 else 0
-            
-            # Actualizar mensaje (en un caso real usaríamos async, pero esta función es sync)
-            # Por simplicidad, solo logueamos
-            logger.info(f"Progreso: {filename} - {percent:.1f}% ({bytes_read}/{total_bytes})")
-        
         # Subir archivo
-        await upload_msg.edit_text(
-            "📤 <b>Subiendo archivo...</b><br>"
-            f"Archivo: {user_info['file_name']}<br>"
+        await processing_msg.edit_text(
+            "📤 <b>Subiendo archivo...</b>\n"
+            f"Archivo: {escape_html(user_info['file_name'])}\n"
             "Progreso: 0%",
             parse_mode='HTML'
         )
+        
+        # Función de progreso simple
+        last_percent = 0
+        
+        def progress_callback(filename, bytes_read, total_bytes, speed, estimated_time, args):
+            nonlocal last_percent
+            percent = (bytes_read / total_bytes) * 100
+            
+            # Solo actualizar cada 10% de progreso
+            if percent - last_percent >= 10 or percent >= 100:
+                last_percent = percent
+                # Nota: Esta función se ejecuta en un hilo diferente
+                # No podemos actualizar el mensaje aquí directamente
+                logger.info(f"Progreso de subida: {filename} - {percent:.1f}%")
         
         error_msg, result = uploader.upload_file(
             progressfunc=progress_callback,
@@ -558,9 +537,9 @@ async def perform_upload(update: Update, context: ContextTypes.DEFAULT_TYPE, use
                 pass
         
         if error_msg:
-            await upload_msg.edit_text(
-                f"❌ <b>Error en la subida</b><br><br>"
-                f"Detalles: {error_msg}<br><br>"
+            await processing_msg.edit_text(
+                f"❌ <b>Error en la subida</b>\n\n"
+                f"Detalles: {escape_html(error_msg)}\n\n"
                 f"Por favor, intenta de nuevo.",
                 parse_mode='HTML'
             )
@@ -573,38 +552,35 @@ async def perform_upload(update: Update, context: ContextTypes.DEFAULT_TYPE, use
             }
             
             success_text = (
-                f"✅ <b>¡ARCHIVO SUBIDO EXITOSAMENTE!</b><br><br>"
-                f"<b>📋 Detalles:</b><br>"
-                f"• Plataforma: {platform_names[user_info['platform']]}<br>"
-                f"• Archivo: {user_info['file_name']}<br>"
-                f"• Usuario: {user_info['login_user']}<br><br>"
-                f"<b>🔗 Enlace de descarga:</b><br>"
-                f"<code>{result['url']}</code><br><br>"
-                f"📝 <b>Nota:</b> El enlace puede tener límite de tiempo<br>"
+                f"✅ <b>¡ARCHIVO SUBIDO EXITOSAMENTE!</b>\n\n"
+                f"<b>📋 Detalles:</b>\n"
+                f"• Plataforma: {platform_names[user_info['platform']]}\n"
+                f"• Archivo: {escape_html(user_info['file_name'])}\n"
+                f"• Usuario: {escape_html(user_info['login_user'])}\n\n"
+                f"<b>🔗 Enlace de descarga:</b>\n"
+                f"<code>{escape_html(result['url'])}</code>\n\n"
+                f"📝 <b>Nota:</b> El enlace puede tener límite de tiempo\n"
                 f"🔄 Usa /upload para subir otro archivo"
             )
             
-            await upload_msg.edit_text(success_text, parse_mode='HTML')
+            await processing_msg.edit_text(success_text, parse_mode='HTML')
         
         # Limpiar datos del usuario
-        del user_data[user_id]
+        if user_id in user_data:
+            del user_data[user_id]
         
         return ConversationHandler.END
         
     except Exception as e:
         logger.error(f"Error en subida: {e}\n{traceback.format_exc()}")
         
-        error_text = (
-            "❌ <b>Error inesperado</b><br><br>"
-            "Ocurrió un problema durante la subida.<br>"
-            "Por favor, intenta de nuevo o contacta al administrador.<br><br>"
-            f"🛠️ Soporte: @{ADMIN_ALIAS}"
+        await processing_msg.edit_text(
+            "❌ <b>Error inesperado</b>\n\n"
+            "Ocurrió un problema durante la subida.\n"
+            "Por favor, intenta de nuevo o contacta al administrador.\n\n"
+            f"🛠️ Soporte: @{ADMIN_ALIAS}",
+            parse_mode='HTML'
         )
-        
-        if upload_msg:
-            await upload_msg.edit_text(error_text, parse_mode='HTML')
-        else:
-            await update.message.reply_text(error_text, parse_mode='HTML')
         
         # Limpiar archivo temporal si existe
         if user_id in user_data and 'file_path' in user_data[user_id]:
@@ -633,7 +609,7 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         del user_data[user_id]
     
     await update.message.reply_text(
-        "❌ <b>Operación cancelada</b><br><br>"
+        "❌ <b>Operación cancelada</b>\n\n"
         "Puedes comenzar de nuevo con /upload",
         parse_mode='HTML'
     )
@@ -645,11 +621,14 @@ async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     logger.error(f"Error: {context.error}", exc_info=True)
     
     if update and update.effective_message:
-        await update.effective_message.reply_text(
-            "❌ <b>Error interno del bot</b><br><br>"
-            "Por favor, intenta de nuevo o contacta al administrador.",
-            parse_mode='HTML'
-        )
+        try:
+            await update.effective_message.reply_text(
+                "❌ <b>Error interno del bot</b>\n\n"
+                "Por favor, intenta de nuevo o contacta al administrador.",
+                parse_mode='HTML'
+            )
+        except:
+            pass
 
 # ========= FUNCIÓN PRINCIPAL =========
 def main() -> None:
@@ -665,60 +644,64 @@ def main() -> None:
     print("🔗 Proxy SOCKS5 configurado")
     print("📁 Uploader unificado cargado")
     
-    # Crear aplicación con ApplicationBuilder
-    application = (
-        ApplicationBuilder()
-        .token(TELEGRAM_BOT_TOKEN)
-        .concurrent_updates(True)
-        .pool_timeout(30)
-        .connect_timeout(30)
-        .read_timeout(30)
-        .write_timeout(30)
-        .build()
-    )
-    
-    # Crear conversation handler para subida
-    conv_handler = ConversationHandler(
-        entry_points=[CommandHandler("upload", upload_start)],
-        states={
-            PLATFORM: [CallbackQueryHandler(platform_selection)],
-            CREDENTIALS: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, get_host),
-                MessageHandler(filters.TEXT & ~filters.COMMAND, get_credentials)
-            ],
-            FILE: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_repo_id)],
-            UPLOAD: [MessageHandler(filters.Document.ALL, handle_file)]
-        },
-        fallbacks=[CommandHandler("cancel", cancel)]
-    )
-    
-    # Añadir handlers
-    application.add_handler(CommandHandler("start", start))
-    application.add_handler(CommandHandler("help", help_command))
-    application.add_handler(CommandHandler("status", status))
-    application.add_handler(CommandHandler("stats", stats))
-    application.add_handler(CommandHandler("reset", reset))
-    application.add_handler(conv_handler)
-    
-    # Añadir manejador de errores
-    application.add_error_handler(error_handler)
-    
-    # Iniciar bot
-    print("✅ Bot iniciado correctamente")
-    print("📡 Escuchando mensajes...")
-    print("🛑 Presiona Ctrl+C para detener")
-    
     try:
+        # Crear aplicación con ApplicationBuilder
+        application = (
+            ApplicationBuilder()
+            .token(TELEGRAM_BOT_TOKEN)
+            .concurrent_updates(True)
+            .pool_timeout(30)
+            .connect_timeout(30)
+            .read_timeout(30)
+            .write_timeout(30)
+            .post_init(lambda app: print("✅ Bot configurado correctamente"))
+            .build()
+        )
+        
+        # Crear conversation handler para subida
+        conv_handler = ConversationHandler(
+            entry_points=[CommandHandler("upload", upload_start)],
+            states={
+                PLATFORM: [CallbackQueryHandler(platform_selection)],
+                CREDENTIALS: [
+                    MessageHandler(filters.TEXT & ~filters.COMMAND, get_host),
+                ],
+                FILE: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_repo_id)],
+                UPLOAD: [MessageHandler(filters.Document.ALL, handle_file)]
+            },
+            fallbacks=[CommandHandler("cancel", cancel)],
+            allow_reentry=True
+        )
+        
+        # Añadir handlers
+        application.add_handler(CommandHandler("start", start))
+        application.add_handler(CommandHandler("help", help_command))
+        application.add_handler(CommandHandler("status", status))
+        application.add_handler(CommandHandler("stats", stats))
+        application.add_handler(CommandHandler("reset", reset))
+        application.add_handler(conv_handler)
+        
+        # Añadir manejador de errores
+        application.add_error_handler(error_handler)
+        
+        # Iniciar bot
+        print("✅ Bot iniciado correctamente")
+        print("📡 Escuchando mensajes...")
+        print("🛑 Presiona Ctrl+C para detener")
+        print("=" * 50)
+        
+        # Ejecutar polling con drop_pending_updates
         application.run_polling(
             allowed_updates=Update.ALL_TYPES,
             drop_pending_updates=True,
             close_loop=False
         )
+        
     except KeyboardInterrupt:
         print("\n🛑 Bot detenido por usuario")
         sys.exit(0)
     except Exception as e:
-        print(f"❌ Error crítico: {e}")
+        print(f"❌ Error crítico al iniciar el bot: {e}")
         traceback.print_exc()
         sys.exit(1)
 
