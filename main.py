@@ -26,7 +26,7 @@ from uploader import UnifiedUploader
 
 # ========= CONFIGURACIÓN =========
 # Token del bot de Telegram (REEMPLAZA CON TU TOKEN)
-TELEGRAM_BOT_TOKEN = "8550420490:AAHsNEhhcHq2wb_g1dQwUeMmMzgaNqXWd-A"
+TELEGRAM_BOT_TOKEN = "8582821363:AAHNVj6XPxYoT7j5tF0U-9GI2qE_5bdtHSA"
 
 # Alias del administrador (sin @)
 ADMIN_ALIAS = "Eliel_21"
